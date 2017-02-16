@@ -10,25 +10,13 @@ def edge_mask(mask):
 
     Return a two-dimensional edge of brain mask.
     """
-    brain = np.zeros(mask.shape[1:])
-    # iterate over axial
-    for i in range(0, mask.shape[1] - 1):
-        # iterate over coronal
-        for k in range(mask.shape[2] - 1, 0, -1):
-            brain[i, k] = mask[:, i, k].any()
+    # Sagittal profile
+    brain = mask.any(axis=0)
 
-    edgemask = np.zeros(brain.shape, dtype='uint8')
-    for u in range(1, brain.shape[0] - 2):
-        for v in range(1, brain.shape[1] - 2):
-            if brain[u, v] + brain[u - 1, v] == 1:
-                edgemask[u, v] = 1
-            elif brain[u, v] + brain[u, v - 1] == 1:
-                edgemask[u, v] = 1
-            elif brain[u, v] + brain[u + 1, v] == 1:
-                edgemask[u, v] = 1
-            elif brain[u, v] + brain[u, v + 1] == 1:
-                edgemask[u, v] = 1
-    return edgemask
+    # Simple edge detection
+    edgemask = 4 * brain - np.roll(brain, 1, 0) - np.roll(brain, -1, 0) - \
+                           np.roll(brain, 1, 1) - np.roll(brain, -1, 1) != 0
+    return edgemask.astype('uint8')
 
 
 def convex_hull(brain):
