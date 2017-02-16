@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import numpy
+import numpy as np
 import nibabel as nb
 import sys
 import logging
@@ -10,14 +10,14 @@ def edge_mask(mask):
 
     Return a two-dimensional edge of brain mask.
     """
-    brain = numpy.zeros(mask.shape[1:])
+    brain = np.zeros(mask.shape[1:])
     # iterate over axial
     for i in range(0, mask.shape[1] - 1):
         # iterate over coronal
         for k in range(mask.shape[2] - 1, 0, -1):
             brain[i, k] = mask[:, i, k].any()
 
-    edgemask = numpy.zeros(brain.shape, dtype='uint8')
+    edgemask = np.zeros(brain.shape, dtype='uint8')
     for u in range(1, brain.shape[0] - 2):
         for v in range(1, brain.shape[1] - 2):
             if brain[u, v] + brain[u - 1, v] == 1:
@@ -38,9 +38,9 @@ def convex_hull(brain):
     Return a two-dimensional convex hull.
     """
     # convert brain to a list of points
-    nz = numpy.nonzero(brain)
+    nz = np.nonzero(brain)
     # transpose so we get an n x 2 matrix where n_i = (x,y)
-    pts = numpy.array([nz[0], nz[1]]).transpose()
+    pts = np.array([nz[0], nz[1]]).transpose()
 
     def cross(o, a, b):
         return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
@@ -52,7 +52,7 @@ def convex_hull(brain):
             lower.pop()
         lower.append(p)
 
-    return numpy.array(lower).transpose()
+    return np.array(lower).transpose()
 
 
 def deface(anat_filename, mask_filename, defaced_filename, buff=10):
@@ -68,7 +68,7 @@ def deface(anat_filename, mask_filename, defaced_filename, buff=10):
     nii_anat = nb.load(anat_filename)
     nii_mask = nb.load(mask_filename)
 
-    if numpy.equal(nii_anat.shape, nii_mask.shape).all():
+    if np.equal(nii_anat.shape, nii_mask.shape).all():
         pass
     else:
         logger.warning(
@@ -116,8 +116,8 @@ def deface(anat_filename, mask_filename, defaced_filename, buff=10):
     slope = (low[1][0] - low[1][1]) / (low[0][0] - low[0][1])
 
     yint = low[1][0] - (low[0][0] * slope) - buff
-    ys = numpy.arange(0, mask.shape[2]) * slope + yint
-    defaced_mask = numpy.ones(mask.shape, dtype='uint8')
+    ys = np.arange(0, mask.shape[2]) * slope + yint
+    defaced_mask = np.ones(mask.shape, dtype='uint8')
 
     for x in range(0, ys.size - 1):
         if ys[x] < 0:
