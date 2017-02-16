@@ -54,6 +54,26 @@ def orient_xPS(img, hemi='R'):
     return flip_axes(data, flips), flips
 
 
+def quickshear(anat_img, mask_img, buff=10):
+    anat, anat_flip = orient_xPS(anat_img)
+    mask, mask_flip = orient_xPS(mask_img)
+
+    edgemask = edge_mask(mask)
+    low = convex_hull(edgemask)
+    xdiffs, ydiffs = np.diff(low)
+    slope = ydiffs[0] / xdiffs[0]
+
+    yint = low[1][0] - (low[0][0] * slope) - buff
+    ys = np.arange(0, mask.shape[2]) * slope + yint
+    defaced_mask = np.ones(mask.shape, dtype='bool')
+
+    for x, y in zip(np.nonzero(ys > 0)[0], ys.astype(int)):
+        defaced_mask[:, x, :y] = 0
+
+    return anat_img.__class__(flip_axes(defaced_mask * anat, anat_flip),
+                              anat_img.affine, anat_img.header.copy())
+
+
 def deface(anat_filename, mask_filename, defaced_filename, buff=10):
     """Deface neuroimage using a binary brain mask.
 
@@ -64,30 +84,15 @@ def deface(anat_filename, mask_filename, defaced_filename, buff=10):
     buff -- the buffer size between the shearing line and the brain
         (default value is 10.0)
     """
-    nii_anat = nb.load(anat_filename)
-    nii_mask = nb.load(mask_filename)
+    anat_img = nb.load(anat_filename)
+    mask_img = nb.load(mask_filename)
 
-    if nii_anat.shape != nii_mask.shape:
+    if anat_img.shape != mask_img.shape:
         logger.warning(
             "Anatomical and mask images do not have the same dimensions.")
         sys.exit(-1)
 
-    anat, anat_flip = orient_xPS(anat_img)
-    mask, mask_flip = orient_xPS(mask_img)
-
-    edgemask = edge_mask(mask)
-    low = convex_hull(edgemask)
-    slope = (low[1][0] - low[1][1]) / (low[0][0] - low[0][1])
-
-    yint = low[1][0] - (low[0][0] * slope) - buff
-    ys = np.arange(0, mask.shape[2]) * slope + yint
-    defaced_mask = np.ones(mask.shape, dtype='bool')
-
-    for x, y in zip(np.nonzero(ys > 0)[0], ys.astype(int)):
-        defaced_mask[:, x, :y] = 0
-
-    new_anat = nb.Nifti1Image(flip_axes(defaced_mask * anat, anat_flip),
-                              nii_anat.affine, nii_anat.header.copy())
+    new_anat = quickshear(anat_img, mask_img, buff)
     new_anat.to_filename(defaced_filename)
     logger.info("Defaced file: {0}".format(defaced_filename))
 
