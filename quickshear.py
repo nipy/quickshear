@@ -4,6 +4,29 @@ import argparse
 import numpy as np
 import nibabel as nb
 import logging
+from due import due, BibTeX
+
+due.cite(BibTeX("""
+@inproceedings{Schimke2011,
+abstract = {Data sharing offers many benefits to the neuroscience research
+community. It encourages collaboration and interorganizational research
+efforts, enables reproducibility and peer review, and allows meta-analysis and
+data reuse. However, protecting subject privacy and implementing HIPAA
+compliance measures can be a burdensome task. For high resolution structural
+neuroimages, subject privacy is threatened by the neuroimage itself, which can
+contain enough facial features to re-identify an individual. To sufficiently
+de-identify an individual, the neuroimage pixel data must also be removed.
+Quickshear Defacing accomplishes this task by effectively shearing facial
+features while preserving desirable brain tissue.},
+address = {San Francisco},
+author = {Schimke, Nakeisha and Hale, John},
+booktitle = {Proceedings of the 2nd USENIX Conference on Health Security and Privacy},
+title = {{Quickshear Defacing for Neuroimages}},
+year = {2011},
+month = sep
+}"""),
+         description="Geometric neuroimage defacer",
+         path="quickshear")
 
 
 def edge_mask(mask):
