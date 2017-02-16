@@ -25,22 +25,19 @@ def convex_hull(brain):
 
     Return a two-dimensional convex hull.
     """
-    # convert brain to a list of points
-    nz = np.nonzero(brain)
-    # transpose so we get an n x 2 matrix where n_i = (x,y)
-    pts = np.array([nz[0], nz[1]]).transpose()
+    # convert brain to a list of points in an n x 2 matrix where n_i = (x,y)
+    pts = np.vstack(np.nonzero(brain)).T
 
     def cross(o, a, b):
-        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+        return np.cross(a - o, b - o)
 
     lower = []
-    for i in range(0, pts.shape[0]):
-        p = (pts[i, 0], pts[i, 1])
+    for p in pts:
         while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
             lower.pop()
         lower.append(p)
 
-    return np.array(lower).transpose()
+    return np.array(lower).T
 
 
 def flip_axes(data, flips):
