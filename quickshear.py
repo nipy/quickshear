@@ -43,6 +43,20 @@ def convex_hull(brain):
     return np.array(lower).transpose()
 
 
+def flip_axes(data, flips):
+    for axis in np.nonzero(flips)[0]:
+        data = nb.orientations.flip_axis(data, axis)
+    return data
+
+
+def orient_xPS(img, hemi='R'):
+    """Set image orientation to RPS (or LPS), tracking flips for re-flipping"""
+    axes = nb.orientations.aff2axcodes(img.affine)
+    data = img.get_data()
+    flips = np.array(axes) != np.array((hemi, 'P', 'S'))
+    return flip_axes(data, flips), flips
+
+
 def deface(anat_filename, mask_filename, defaced_filename, buff=10):
     """Deface neuroimage using a binary brain mask.
 
@@ -56,48 +70,13 @@ def deface(anat_filename, mask_filename, defaced_filename, buff=10):
     nii_anat = nb.load(anat_filename)
     nii_mask = nb.load(mask_filename)
 
-    if np.equal(nii_anat.shape, nii_mask.shape).all():
-        pass
-    else:
+    if nii_anat.shape != nii_mask.shape:
         logger.warning(
             "Anatomical and mask images do not have the same dimensions.")
         sys.exit(-1)
 
-    anat_ax = nb.orientations.aff2axcodes(nii_anat.get_affine())
-    mask_ax = nb.orientations.aff2axcodes(nii_mask.get_affine())
-
-    logger.debug("Anat image axes: {0}".format(anat_ax))
-    logger.debug("Mask image axes: {0}".format(mask_ax))
-    logger.debug("Mask shape!: {0}".format(nii_mask.shape))
-
-    mask = nii_mask.get_data()
-    anat = nii_anat.get_data()
-
-    anat_flip = [False, False, False]
-
-    if anat_ax[0] != mask_ax[0]:
-        # align mask to anat space
-        logger.debug("Aligning mask to anatomical space... {0} -> {1}".format(
-            mask_ax[0], anat_ax[0]))
-        mask = nb.orientations.flip_axis(mask, 0)
-    if anat_ax[1] != 'P':
-        # flip anatspace
-        logger.debug("Aligning anatomical image to +x -> P")
-        anat_flip[1] = True
-        anat = nb.orientations.flip_axis(anat, 1)
-    if mask_ax[1] != 'P':
-        # flip anatspace
-        logger.debug("Aligning mask to +x -> P")
-        mask = nb.orientations.flip_axis(mask, 1)
-    if anat_ax[2] != 'S':
-        # flip anatspace
-        logger.debug("Aligning anatomical image to +y -> S")
-        anat_flip[2] = True
-        anat = nb.orientations.flip_axis(anat, 2)
-    if mask_ax[2] != 'S':
-        # flip anatspace
-        logger.debug("Aligning mask to +y -> S")
-        mask = nb.orientations.flip_axis(mask, 2)
+    anat, anat_flip = orient_xPS(anat_img)
+    mask, mask_flip = orient_xPS(mask_img)
 
     edgemask = edge_mask(mask)
     low = convex_hull(edgemask)
@@ -105,24 +84,14 @@ def deface(anat_filename, mask_filename, defaced_filename, buff=10):
 
     yint = low[1][0] - (low[0][0] * slope) - buff
     ys = np.arange(0, mask.shape[2]) * slope + yint
-    defaced_mask = np.ones(mask.shape, dtype='uint8')
+    defaced_mask = np.ones(mask.shape, dtype='bool')
 
-    for x in range(0, ys.size - 1):
-        if ys[x] < 0:
-            break
-        else:
-            ymax = min(ys[x], mask.shape[2])
-            defaced_mask[:, x, :ymax] = 0
+    for x, y in zip(np.nonzero(ys > 0)[0], ys.astype(int)):
+        defaced_mask[:, x, :y] = 0
 
-    defaced_img = defaced_mask * anat
-
-    newimg = defaced_img
-    if anat_flip[1]:
-        newimg = nb.orientations.flip_axis(newimg, 1)
-    if anat_flip[2]:
-        newimg = nb.orientations.flip_axis(newimg, 2)
-    new_anat = nb.Nifti1Image(newimg, nii_anat.affine, nii_anat.header.copy())
-    nb.save(new_anat, defaced_filename)
+    new_anat = nb.Nifti1Image(flip_axes(defaced_mask * anat, anat_flip),
+                              nii_anat.affine, nii_anat.header.copy())
+    new_anat.to_filename(defaced_filename)
     logger.info("Defaced file: {0}".format(defaced_filename))
 
 
