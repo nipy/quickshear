@@ -128,12 +128,11 @@ def deface(anat_filename, mask_filename, defaced_filename, buff=10):
 
     defaced_img = defaced_mask * anat
 
+    newimg = defaced_img
     if anat_flip[1]:
-        newimg = nb.orientations.flip_axis(defaced_img, 1)
+        newimg = nb.orientations.flip_axis(newimg, 1)
     if anat_flip[2]:
-        newimg = nb.orientations.flip_axis(defaced_img, 2)
-    else:
-        newimg = defaced_img
+        newimg = nb.orientations.flip_axis(newimg, 2)
     new_anat = nb.Nifti1Image(newimg, nii_anat.affine, nii_anat.header.copy())
     nb.save(new_anat, defaced_filename)
     logger.info("Defaced file: {0}".format(defaced_filename))
