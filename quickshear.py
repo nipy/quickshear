@@ -71,7 +71,7 @@ def deface(anat_filename, mask_filename, defaced_filename, buff=10):
     if numpy.equal(nii_anat.shape, nii_mask.shape).all():
         pass
     else:
-        logger.WARNING(
+        logger.warning(
             "Anatomical and mask images do not have the same dimensions.")
         sys.exit(-1)
 
@@ -134,7 +134,7 @@ def deface(anat_filename, mask_filename, defaced_filename, buff=10):
         newimg = nb.orientations.flip_axis(defaced_img, 2)
     else:
         newimg = defaced_img
-    new_anat = nb.Nifti1Image(newimg, nii_anat.get_affine())
+    new_anat = nb.Nifti1Image(newimg, nii_anat.affine, nii_anat.header.copy())
     nb.save(new_anat, defaced_filename)
     logger.info("Defaced file: {0}".format(defaced_filename))
 
@@ -158,7 +158,7 @@ if __name__ == '__main__':
         newfile = sys.argv[3]
         if len(sys.argv) >= 5:
             try:
-                buff = sys.argv[4]
+                buff = int(sys.argv[4])
             except:
                 raise ValueError
             deface(anatfile, stripfile, newfile, buff)
