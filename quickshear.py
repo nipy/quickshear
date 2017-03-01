@@ -6,9 +6,18 @@ import logging
 
 
 def edge_mask(mask):
-    """Create an edge of brain mask from a binary brain mask.
+    """ Find the edges of a mask or masked image
 
-    Return a two-dimensional edge of brain mask.
+    Parameters
+    ----------
+    mask : 3D array
+        Binary mask (or masked image) with axis orientation LPS or RPS, and the
+        non-brain region set to 0
+
+    Returns
+    -------
+    2D array
+        Outline of sagittal profile (PS orientation) of mask
     """
     # Sagittal profile
     brain = mask.any(axis=0)
@@ -20,10 +29,21 @@ def edge_mask(mask):
 
 
 def convex_hull(brain):
-    """Use Andrew's monotone chain algorithm to find the lower half of the
-    convex hull.
+    """ Find the lower half of the convex hull of non-zero points
 
-    Return a two-dimensional convex hull.
+    Implements Andrew's monotone chain algorithm [0].
+
+    [0] https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain
+
+    Parameters
+    ----------
+    brain : 2D array
+        2D array in PS axis ordering
+
+    Returns
+    -------
+    (2, N) array
+        Sequence of points in the lower half of the convex hull of brain
     """
     # convert brain to a list of points in an n x 2 matrix where n_i = (x,y)
     pts = np.vstack(np.nonzero(brain)).T
@@ -41,13 +61,40 @@ def convex_hull(brain):
 
 
 def flip_axes(data, flips):
+    """ Flip a data array along specified axes
+
+    Parameters
+    ----------
+    data : 3D array
+    flips : (3,) sequence of bools
+        Sequence of indicators for whether to flip along each axis
+
+    Returns
+    -------
+    3D array
+    """
     for axis in np.nonzero(flips)[0]:
         data = nb.orientations.flip_axis(data, axis)
     return data
 
 
 def orient_xPS(img, hemi='R'):
-    """Set image orientation to RPS (or LPS), tracking flips for re-flipping"""
+    """ Set image orientation to RPS or LPS
+
+    Parameters
+    ----------
+    img : SpatialImage
+        Nibabel image to be reoriented
+    hemi : 'R' or 'L'
+        Orientation of first axis of output image (default: 'R')
+
+    Returns
+    -------
+    data : 3D array_like
+        Re-oriented data array
+    flips : (3,) sequence of bools
+        Sequence of indicators of axes flipped
+    """
     axes = nb.orientations.aff2axcodes(img.affine)
     data = img.get_data()
     flips = np.array(axes) != np.array((hemi, 'P', 'S'))
@@ -55,6 +102,22 @@ def orient_xPS(img, hemi='R'):
 
 
 def quickshear(anat_img, mask_img, buff=10):
+    """ Deface image using Quickshear algorithm
+
+    Parameters
+    ----------
+    anat_img : SpatialImage
+        Nibabel image of anatomical scan, to be defaced
+    mask_img : SpatialImage
+        Nibabel image of skull-stripped brain mask or masked anatomical
+    buff : int
+        Distance from mask to set shearing plane
+
+    Returns
+    -------
+    SpatialImage
+        Nibabel image of defaced anatomical scan
+    """
     anat, anat_flip = orient_xPS(anat_img)
     mask, mask_flip = orient_xPS(mask_img)
 
