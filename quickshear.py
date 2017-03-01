@@ -1,7 +1,8 @@
 #!/usr/bin/python
+import sys
+import argparse
 import numpy as np
 import nibabel as nb
-import sys
 import logging
 
 
@@ -137,50 +138,40 @@ def quickshear(anat_img, mask_img, buff=10):
                               anat_img.affine, anat_img.header.copy())
 
 
-def deface(anat_filename, mask_filename, defaced_filename, buff=10):
-    """Deface neuroimage using a binary brain mask.
-
-    Keyword arguments:
-    anat_filename -- the filename of the neuroimage to deface
-    mask_filename -- the filename of the binary brain mask
-    defaced_filename -- the filename of the defaced output image
-    buff -- the buffer size between the shearing line and the brain
-        (default value is 10.0)
-    """
-    anat_img = nb.load(anat_filename)
-    mask_img = nb.load(mask_filename)
-
-    if anat_img.shape != mask_img.shape:
-        logger.warning(
-            "Anatomical and mask images do not have the same dimensions.")
-        sys.exit(-1)
-
-    new_anat = quickshear(anat_img, mask_img, buff)
-    new_anat.to_filename(defaced_filename)
-    logger.info("Defaced file: {0}".format(defaced_filename))
-
-
-if __name__ == '__main__':
-
+def main(cmd, *argv):
     logger = logging.getLogger(__name__)
-    # logging.basicConfig(filename="hull.log",level=logging.DEBUG)
     logger.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
     logger.addHandler(ch)
 
-    if len(sys.argv) < 4:
-        logger.debug(
-            "Usage: quickshear.py anat_file strip_file defaced_file [buffer]")
-        sys.exit(-1)
-    else:
-        anatfile = sys.argv[1]
-        stripfile = sys.argv[2]
-        newfile = sys.argv[3]
-        if len(sys.argv) >= 5:
-            try:
-                buff = int(sys.argv[4])
-            except:
-                raise ValueError
-            deface(anatfile, stripfile, newfile, buff)
-        deface(anatfile, stripfile, newfile)
+    parser = argparse.ArgumentParser(
+        description='Quickshear defacing for neuroimages',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('anat_file', type=str,
+                        help="filename of neuroimage to deface")
+    parser.add_argument('mask_file', type=str,
+                        help="filename of brain mask")
+    parser.add_argument('defaced_file', type=str,
+                        help="filename of defaced output image")
+    parser.add_argument('buffer', type=float, nargs='?', default=10.0,
+                        help="buffer size (in voxels) between shearing plane "
+                        "and the brain")
+
+    opts = parser.parse_args(argv)
+
+    anat_img = nb.load(opts.anat_file)
+    mask_img = nb.load(opts.mask_file)
+
+    if anat_img.shape != mask_img.shape:
+        logger.warning(
+            "Anatomical and mask images do not have the same dimensions.")
+        return -1
+
+    new_anat = quickshear(anat_img, mask_img, opts.buffer)
+    new_anat.to_filename(opts.defaced_file)
+    logger.info("Defaced file: {0}".format(opts.defaced_file))
+
+
+if __name__ == '__main__':
+    sys.exit(main(*sys.argv))
