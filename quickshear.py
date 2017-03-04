@@ -4,6 +4,8 @@ import nibabel as nb
 import sys
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 def edge_mask(mask):
     """Create an edge of brain mask from a binary brain mask.
@@ -138,9 +140,7 @@ def deface(anat_filename, mask_filename, defaced_filename, buff=10):
     logger.info("Defaced file: {0}".format(defaced_filename))
 
 
-if __name__ == '__main__':
-
-    logger = logging.getLogger(__name__)
+def main(*argv):
     # logging.basicConfig(filename="hull.log",level=logging.DEBUG)
     logger.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
@@ -162,3 +162,7 @@ if __name__ == '__main__':
                 raise ValueError
             deface(anatfile, stripfile, newfile, buff)
         deface(anatfile, stripfile, newfile)
+
+
+if __name__ == '__main__':
+    sys.exit(main(*sys.argv))
