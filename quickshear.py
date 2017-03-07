@@ -4,10 +4,34 @@ import argparse
 import numpy as np
 import nibabel as nb
 import logging
-from due import due, BibTeX
+try:
+    from due import due, BibTeX
+except ImportError:
+    # Adapted from
+    # https://github.com/duecredit/duecredit/blob/2221bfd/duecredit/stub.py
+    class InactiveDueCreditCollector(object):
+        """Just a stub at the Collector which would not do anything"""
+        def _donothing(self, *args, **kwargs):
+            """Perform no good and no bad"""
+            pass
 
-due.cite(BibTeX("""
-@inproceedings{Schimke2011,
+        def dcite(self, *args, **kwargs):
+            """If I could cite I would"""
+            def nondecorating_decorator(func):
+                return func
+            return nondecorating_decorator
+
+        cite = load = add = _donothing
+
+        def __repr__(self):
+            return self.__class__.__name__ + '()'
+
+    due = InactiveDueCreditCollector()
+
+    def BibTeX(*args, **kwargs):
+        pass
+
+citation_text = """@inproceedings{Schimke2011,
 abstract = {Data sharing offers many benefits to the neuroscience research
 community. It encourages collaboration and interorganizational research
 efforts, enables reproducibility and peer review, and allows meta-analysis and
@@ -24,9 +48,9 @@ booktitle = {Proceedings of the 2nd USENIX Conference on Health Security and Pri
 title = {{Quickshear Defacing for Neuroimages}},
 year = {2011},
 month = sep
-}"""),
-         description="Geometric neuroimage defacer",
-         path="quickshear")
+}
+"""
+__version__ = '1.0.1-dev'
 
 
 def edge_mask(mask):
@@ -125,6 +149,8 @@ def orient_xPS(img, hemi='R'):
     return flip_axes(data, flips), flips
 
 
+@due.dcite(BibTeX(citation_text), description="Geometric neuroimage defacer",
+           path="quickshear")
 def quickshear(anat_img, mask_img, buff=10):
     """ Deface image using Quickshear algorithm
 
