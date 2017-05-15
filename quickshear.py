@@ -196,7 +196,7 @@ def quickshear(anat_img, mask_img, buff=10):
         anat_img.affine, anat_img.header)
 
 
-def main(cmd, *argv):
+def main():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
@@ -216,7 +216,7 @@ def main(cmd, *argv):
                         help="buffer size (in voxels) between shearing plane "
                         "and the brain")
 
-    opts = parser.parse_args(argv)
+    opts = parser.parse_args()
 
     anat_img = nb.load(opts.anat_file)
     mask_img = nb.load(opts.mask_file)
@@ -232,4 +232,4 @@ def main(cmd, *argv):
 
 
 if __name__ == '__main__':
-    sys.exit(main(*sys.argv))
+    sys.exit(main())
