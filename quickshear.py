@@ -4,6 +4,53 @@ import argparse
 import numpy as np
 import nibabel as nb
 import logging
+try:
+    from due import due, BibTeX
+except ImportError:
+    # Adapted from
+    # https://github.com/duecredit/duecredit/blob/2221bfd/duecredit/stub.py
+    class InactiveDueCreditCollector(object):
+        """Just a stub at the Collector which would not do anything"""
+        def _donothing(self, *args, **kwargs):
+            """Perform no good and no bad"""
+            pass
+
+        def dcite(self, *args, **kwargs):
+            """If I could cite I would"""
+            def nondecorating_decorator(func):
+                return func
+            return nondecorating_decorator
+
+        cite = load = add = _donothing
+
+        def __repr__(self):
+            return self.__class__.__name__ + '()'
+
+    due = InactiveDueCreditCollector()
+
+    def BibTeX(*args, **kwargs):
+        pass
+
+citation_text = """@inproceedings{Schimke2011,
+abstract = {Data sharing offers many benefits to the neuroscience research
+community. It encourages collaboration and interorganizational research
+efforts, enables reproducibility and peer review, and allows meta-analysis and
+data reuse. However, protecting subject privacy and implementing HIPAA
+compliance measures can be a burdensome task. For high resolution structural
+neuroimages, subject privacy is threatened by the neuroimage itself, which can
+contain enough facial features to re-identify an individual. To sufficiently
+de-identify an individual, the neuroimage pixel data must also be removed.
+Quickshear Defacing accomplishes this task by effectively shearing facial
+features while preserving desirable brain tissue.},
+address = {San Francisco},
+author = {Schimke, Nakeisha and Hale, John},
+booktitle = {Proceedings of the 2nd USENIX Conference on Health Security and Privacy},
+title = {{Quickshear Defacing for Neuroimages}},
+year = {2011},
+month = sep
+}
+"""
+__version__ = '1.0.1-dev'
 
 
 def edge_mask(mask):
@@ -102,6 +149,8 @@ def orient_xPS(img, hemi='R'):
     return flip_axes(data, flips), flips
 
 
+@due.dcite(BibTeX(citation_text), description="Geometric neuroimage defacer",
+           path="quickshear")
 def quickshear(anat_img, mask_img, buff=10):
     """ Deface image using Quickshear algorithm
 
