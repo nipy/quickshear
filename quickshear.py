@@ -108,12 +108,14 @@ def convex_hull(brain):
     return np.array(lower).T
 
 
-def flip_axes(data, flips):
+def flip_axes(data, perms, flips):
     """ Flip a data array along specified axes
 
     Parameters
     ----------
     data : 3D array
+    perms : (3,) sequence of ints
+        Axis permutations to perform
     flips : (3,) sequence of bools
         Sequence of indicators for whether to flip along each axis
 
@@ -121,6 +123,7 @@ def flip_axes(data, flips):
     -------
     3D array
     """
+    data = np.transpose(data, perms)
     for axis in np.nonzero(flips)[0]:
         data = nb.orientations.flip_axis(data, axis)
     return data
@@ -140,13 +143,18 @@ def orient_xPS(img, hemi='R'):
     -------
     data : 3D array_like
         Re-oriented data array
+    perm : (3,) sequence of ints
+        Permutation of axes, relative to RAS
     flips : (3,) sequence of bools
         Sequence of indicators of axes flipped
     """
     axes = nb.orientations.aff2axcodes(img.affine)
-    data = img.get_data()
-    flips = np.array(axes) != np.array((hemi, 'P', 'S'))
-    return flip_axes(data, flips), flips
+    perm = ['RASLPI'.index(axis) % 3 for axis in axes]
+    inv_perm = np.argsort(perm)
+    # Flips are in RPS order
+    flips = np.array(axes)[inv_perm] != np.array((hemi, 'P', 'S'))
+    # We permute axes then flip, so inverse flips are also permuted
+    return flip_axes(img.get_data(), inv_perm, flips), perm, flips[perm]
 
 
 @due.dcite(BibTeX(citation_text), description="Geometric neuroimage defacer",
@@ -168,8 +176,8 @@ def quickshear(anat_img, mask_img, buff=10):
     SpatialImage
         Nibabel image of defaced anatomical scan
     """
-    anat, anat_flip = orient_xPS(anat_img)
-    mask, mask_flip = orient_xPS(mask_img)
+    anat, anat_perm, anat_flip = orient_xPS(anat_img)
+    mask, mask_perm, mask_flip = orient_xPS(mask_img)
 
     edgemask = edge_mask(mask)
     low = convex_hull(edgemask)
@@ -183,11 +191,12 @@ def quickshear(anat_img, mask_img, buff=10):
     for x, y in zip(np.nonzero(ys > 0)[0], ys.astype(int)):
         defaced_mask[:, x, :y] = 0
 
-    return anat_img.__class__(flip_axes(defaced_mask * anat, anat_flip),
-                              anat_img.affine, anat_img.header.copy())
+    return anat_img.__class__(
+        flip_axes(defaced_mask * anat, anat_perm, anat_flip),
+        anat_img.affine, anat_img.header)
 
 
-def main(cmd, *argv):
+def main():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
@@ -207,7 +216,7 @@ def main(cmd, *argv):
                         help="buffer size (in voxels) between shearing plane "
                         "and the brain")
 
-    opts = parser.parse_args(argv)
+    opts = parser.parse_args()
 
     anat_img = nb.load(opts.anat_file)
     mask_img = nb.load(opts.mask_file)
@@ -223,4 +232,4 @@ def main(cmd, *argv):
 
 
 if __name__ == '__main__':
-    sys.exit(main(*sys.argv))
+    sys.exit(main())
