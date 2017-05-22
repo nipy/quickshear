@@ -1,0 +1,13 @@
+Version 1.1.0
+=============
+
+- Significant refactor to modularize and modernize code (https://github.com/nipy/quickshear/pull/2)
+- Add duecredit information for citations (https://github.com/nipy/quickshear/pull/6)
+- Improve robustness to input image orientations (https://github.com/nipy/quickshear/pull/7)
+
+Version 1.0.0
+=============
+
+Initial release
+
+Thanks to Nakeisha Schimke and John Hale for sharing their code and agreeing to allow me to publish it.
