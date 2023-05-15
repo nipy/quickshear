@@ -31,6 +31,10 @@ except ImportError:
     def BibTeX(*args, **kwargs):
         pass
 
+"""Version number."""
+from importlib.metadata import version
+__version__ = version(__package__)
+
 citation_text = """@inproceedings{Schimke2011,
 abstract = {Data sharing offers many benefits to the neuroscience research
 community. It encourages collaboration and interorganizational research
@@ -50,8 +54,6 @@ year = {2011},
 month = sep
 }
 """
-__version__ = '1.1.1-dev'
-
 
 def edge_mask(mask):
     """ Find the edges of a mask or masked image
