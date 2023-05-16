@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 import nibabel as nb
 import logging
+
 try:
     from due import due, BibTeX
 except ImportError:
@@ -11,14 +12,17 @@ except ImportError:
     # https://github.com/duecredit/duecredit/blob/2221bfd/duecredit/stub.py
     class InactiveDueCreditCollector(object):
         """Just a stub at the Collector which would not do anything"""
+
         def _donothing(self, *args, **kwargs):
             """Perform no good and no bad"""
             pass
 
         def dcite(self, *args, **kwargs):
             """If I could cite I would"""
+
             def nondecorating_decorator(func):
                 return func
+
             return nondecorating_decorator
 
         cite = load = add = _donothing
@@ -30,6 +34,7 @@ except ImportError:
 
     def BibTeX(*args, **kwargs):
         pass
+
 
 citation_text = """@inproceedings{Schimke2011,
 abstract = {Data sharing offers many benefits to the neuroscience research
@@ -54,7 +59,7 @@ __version__ = '1.1.1-dev'
 
 
 def edge_mask(mask):
-    """ Find the edges of a mask or masked image
+    """Find the edges of a mask or masked image
 
     Parameters
     ----------
@@ -71,13 +76,19 @@ def edge_mask(mask):
     brain = mask.any(axis=0)
 
     # Simple edge detection
-    edgemask = 4 * brain - np.roll(brain, 1, 0) - np.roll(brain, -1, 0) - \
-                           np.roll(brain, 1, 1) - np.roll(brain, -1, 1) != 0
+    edgemask = (
+        4 * brain
+        - np.roll(brain, 1, 0)
+        - np.roll(brain, -1, 0)
+        - np.roll(brain, 1, 1)
+        - np.roll(brain, -1, 1)
+        != 0
+    )
     return edgemask.astype('uint8')
 
 
 def convex_hull(brain):
-    """ Find the lower half of the convex hull of non-zero points
+    """Find the lower half of the convex hull of non-zero points
 
     Implements Andrew's monotone chain algorithm [0].
 
@@ -109,7 +120,7 @@ def convex_hull(brain):
 
 
 def flip_axes(data, perms, flips):
-    """ Flip a data array along specified axes
+    """Flip a data array along specified axes
 
     Parameters
     ----------
@@ -130,7 +141,7 @@ def flip_axes(data, perms, flips):
 
 
 def orient_xPS(img, hemi='R'):
-    """ Set image orientation to RPS or LPS
+    """Set image orientation to RPS or LPS
 
     Parameters
     ----------
@@ -157,10 +168,13 @@ def orient_xPS(img, hemi='R'):
     return flip_axes(img.dataobj, inv_perm, flips), perm, flips[perm]
 
 
-@due.dcite(BibTeX(citation_text), description="Geometric neuroimage defacer",
-           path="quickshear")
+@due.dcite(
+    BibTeX(citation_text),
+    description='Geometric neuroimage defacer',
+    path='quickshear',
+)
 def quickshear(anat_img, mask_img, buff=10):
-    """ Deface image using Quickshear algorithm
+    """Deface image using Quickshear algorithm
 
     Parameters
     ----------
@@ -193,7 +207,9 @@ def quickshear(anat_img, mask_img, buff=10):
 
     return anat_img.__class__(
         flip_axes(defaced_mask * anat, anat_perm, anat_flip),
-        anat_img.affine, anat_img.header)
+        anat_img.affine,
+        anat_img.header,
+    )
 
 
 def main():
@@ -205,16 +221,22 @@ def main():
 
     parser = argparse.ArgumentParser(
         description='Quickshear defacing for neuroimages',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('anat_file', type=str,
-                        help="filename of neuroimage to deface")
-    parser.add_argument('mask_file', type=str,
-                        help="filename of brain mask")
-    parser.add_argument('defaced_file', type=str,
-                        help="filename of defaced output image")
-    parser.add_argument('buffer', type=float, nargs='?', default=10.0,
-                        help="buffer size (in voxels) between shearing plane "
-                        "and the brain")
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        'anat_file', type=str, help='filename of neuroimage to deface'
+    )
+    parser.add_argument('mask_file', type=str, help='filename of brain mask')
+    parser.add_argument(
+        'defaced_file', type=str, help='filename of defaced output image'
+    )
+    parser.add_argument(
+        'buffer',
+        type=float,
+        nargs='?',
+        default=10.0,
+        help='buffer size (in voxels) between shearing plane and the brain',
+    )
 
     opts = parser.parse_args()
 
@@ -223,12 +245,13 @@ def main():
 
     if anat_img.shape != mask_img.shape:
         logger.warning(
-            "Anatomical and mask images do not have the same dimensions.")
+            'Anatomical and mask images do not have the same dimensions.'
+        )
         return -1
 
     new_anat = quickshear(anat_img, mask_img, opts.buffer)
     new_anat.to_filename(opts.defaced_file)
-    logger.info("Defaced file: {0}".format(opts.defaced_file))
+    logger.info('Defaced file: {0}'.format(opts.defaced_file))
 
 
 if __name__ == '__main__':
