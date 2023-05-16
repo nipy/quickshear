@@ -1,0 +1,55 @@
+name: build
+# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#concurrency
+# https://docs.github.com/en/developers/webhooks-and-events/events/github-event-types#pullrequestevent
+# workflow name, PR number (empty on push), push ref (empty on PR)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macos, windows]
+        python-version: ["2.7", "3.4", "3.11"]
+        install: ['repo']
+        include:
+          - os: ubuntu
+            python-version: 3.11
+            install: sdist
+          - os: ubuntu
+            python-version: 3.11
+            install: wheel
+    name: ${{ matrix.os }} - ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: 'x64'
+      - run: pipx run build
+      - run: pip install dist/*.whl
+        if: ${{ matrix.install == 'wheel' }}
+      - run: pip install dist/*.tar.gz
+        if: ${{ matrix.install == 'sdist' }}
+      - run: pip install .
+        if: ${{ matrix.install == 'repo' }}
+      - name: Test installed package
+        run: |
+          cd /tmp
+          python -c "import quickshear; print(quickshear.__version__)"
+          quickshear -h
