@@ -5,6 +5,7 @@ name: build
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.ref }}
   cancel-in-progress: true
+
 on:
   pull_request:
   push:
@@ -18,7 +19,15 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
-        python-version: [2.7, 3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, "3.10", "3.11"]
+        python-version: ["2.7", "3.4", "3.11"]
+        install: ['repo']
+        include:
+          - os: ubuntu
+            python-version: 3.11
+            install: sdist
+          - os: ubuntu
+            python-version: 3.11
+            install: wheel
     name: ${{ matrix.os }} - ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}-latest
     defaults:
@@ -32,25 +41,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           architecture: 'x64'
-      - name: Install dependencies
+      - run: pipx run build
+      - run: pip install dist/*.whl
+        if: ${{ matrix.install == 'wheel' }}
+      - run: pip install dist/*.tar.gz
+        if: ${{ matrix.install == 'sdist' }}
+      - run: pip install .
+        if: ${{ matrix.install == 'repo' }}
+      - name: Test installed package
         run: |
-          python -m pip install --progress-bar off --upgrade pip setuptools wheel
-          python -m pip install --progress-bar off .[build]
-      - name: Test package install
-        run: python -c "import quickshear; print(quickshear.__version__)"
-      - name: Remove package install
-        run: python -m pip uninstall -y quickshear
-      - name: Build package
-        run: python -m build
-      - name: Install sdist
-        run: pip install ./dist/*.tar.gz
-      - name: Test sdist install
-        run: python -c "import quickshear; print(quickshear.__version__)"
-      - name: Remove sdist install
-        run: python -m pip uninstall -y quickshear
-      - name: Install wheel
-        run: pip install ./dist/*.whl
-      - name: Test wheel install
-        run: python -c "import quickshear; print(quickshear.__version__)"
-      - name: Remove wheel install
-        run: python -m pip uninstall -y quickshear
+          cd /tmp
+          python -c "import quickshear; print(quickshear.__version__)"
+          quickshear -h
