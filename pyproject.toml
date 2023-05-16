@@ -45,3 +45,9 @@ Homepage = "https://github.com/nipy/quickshear"
 
 [tool.hatch.version]
 path = "quickshear.py"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    ".*",
+    "quickshear.pdf",
+]
