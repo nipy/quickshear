@@ -125,7 +125,7 @@ def flip_axes(data, perms, flips):
     """
     data = np.transpose(data, perms)
     for axis in np.nonzero(flips)[0]:
-        data = nb.orientations.flip_axis(data, axis)
+        data = np.flip(data, axis)
     return data
 
 
@@ -154,7 +154,7 @@ def orient_xPS(img, hemi='R'):
     # Flips are in RPS order
     flips = np.array(axes)[inv_perm] != np.array((hemi, 'P', 'S'))
     # We permute axes then flip, so inverse flips are also permuted
-    return flip_axes(img.get_data(), inv_perm, flips), perm, flips[perm]
+    return flip_axes(img.dataobj, inv_perm, flips), perm, flips[perm]
 
 
 @due.dcite(BibTeX(citation_text), description="Geometric neuroimage defacer",
