@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quickshear"
+dynamic = ["version"]
+description = "Quickshear Defacing for Neuroimages"
+readme = "README.rst"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Nakeisha Schimke"},
+    { name = "John Hale" },
+]
+maintainers = [
+    { name = "Christopher J. Markiewicz" },
+    { email = "neuroimaging@python.org" },
+]
+keywords = [
+    "neuroimaging",
+    "neuroscience",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 2",
+    "Programming Language :: Python :: 2.7",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.3",
+    "Programming Language :: Python :: 3.4",
+    "Programming Language :: Python :: 3.5",
+    "Topic :: Software Development :: Build Tools",
+]
+dependencies = [
+    "nibabel",
+    "numpy",
+]
+
+[project.scripts]
+quickshear = "quickshear:main"
+
+[project.urls]
+Homepage = "https://github.com/nipy/quickshear"
+
+[tool.hatch.version]
+path = "quickshear.py"
