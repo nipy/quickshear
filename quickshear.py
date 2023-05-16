@@ -119,55 +119,6 @@ def convex_hull(brain):
     return np.array(lower).T
 
 
-def flip_axes(data, perms, flips):
-    """Flip a data array along specified axes
-
-    Parameters
-    ----------
-    data : 3D array
-    perms : (3,) sequence of ints
-        Axis permutations to perform
-    flips : (3,) sequence of bools
-        Sequence of indicators for whether to flip along each axis
-
-    Returns
-    -------
-    3D array
-    """
-    data = np.transpose(data, perms)
-    for axis in np.nonzero(flips)[0]:
-        data = np.flip(data, axis)
-    return data
-
-
-def orient_xPS(img, hemi='R'):
-    """Set image orientation to RPS or LPS
-
-    Parameters
-    ----------
-    img : SpatialImage
-        Nibabel image to be reoriented
-    hemi : 'R' or 'L'
-        Orientation of first axis of output image (default: 'R')
-
-    Returns
-    -------
-    data : 3D array_like
-        Re-oriented data array
-    perm : (3,) sequence of ints
-        Permutation of axes, relative to RAS
-    flips : (3,) sequence of bools
-        Sequence of indicators of axes flipped
-    """
-    axes = nb.orientations.aff2axcodes(img.affine)
-    perm = ['RASLPI'.index(axis) % 3 for axis in axes]
-    inv_perm = np.argsort(perm)
-    # Flips are in RPS order
-    flips = np.array(axes)[inv_perm] != np.array((hemi, 'P', 'S'))
-    # We permute axes then flip, so inverse flips are also permuted
-    return flip_axes(img.dataobj, inv_perm, flips), perm, flips[perm]
-
-
 @due.dcite(
     BibTeX(citation_text),
     description='Geometric neuroimage defacer',
@@ -190,23 +141,29 @@ def quickshear(anat_img, mask_img, buff=10):
     SpatialImage
         Nibabel image of defaced anatomical scan
     """
-    anat, anat_perm, anat_flip = orient_xPS(anat_img)
-    mask, mask_perm, mask_flip = orient_xPS(mask_img)
+    src_ornt = nb.io_orientation(mask_img.affine)
+    tgt_ornt = nb.orientations.axcodes2ornt('RPS')
+    to_RPS = nb.orientations.ornt_transform(src_ornt, tgt_ornt)
+    from_RPS = nb.orientations.ornt_transform(tgt_ornt, src_ornt)
 
-    edgemask = edge_mask(mask)
+    mask_RPS = nb.orientations.apply_orientation(mask_img.dataobj, to_RPS)
+
+    edgemask = edge_mask(mask_RPS)
     low = convex_hull(edgemask)
     xdiffs, ydiffs = np.diff(low)
     slope = ydiffs[0] / xdiffs[0]
 
     yint = low[1][0] - (low[0][0] * slope) - buff
-    ys = np.arange(0, mask.shape[2]) * slope + yint
-    defaced_mask = np.ones(mask.shape, dtype='bool')
+    ys = np.arange(0, mask_RPS.shape[2]) * slope + yint
+    defaced_mask_RPS = np.ones(mask_RPS.shape, dtype='bool')
 
     for x, y in zip(np.nonzero(ys > 0)[0], ys.astype(int)):
-        defaced_mask[:, x, :y] = 0
+        defaced_mask_RPS[:, x, :y] = 0
+
+    defaced_mask = nb.orientations.apply_orientation(defaced_mask_RPS, from_RPS)
 
     return anat_img.__class__(
-        flip_axes(defaced_mask * anat, anat_perm, anat_flip),
+        np.asanyarray(anat_img.dataobj) * defaced_mask,
         anat_img.affine,
         anat_img.header,
     )
