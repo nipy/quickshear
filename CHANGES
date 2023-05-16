@@ -1,3 +1,12 @@
+Version 1.2.0
+=============
+
+This will be the last version to support Python 3.7 or lower.
+
+- Refactor to use nibabel orientation code, remove deprecated functions
+  (https://github.com/nipy/quickshear/pull/14)
+- Move to Hatchling as build backend (https://github.com/nipy/quickshear/pull/13)
+
 Version 1.1.0
 =============
 
