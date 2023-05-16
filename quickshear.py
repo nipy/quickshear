@@ -55,7 +55,7 @@ year = {2011},
 month = sep
 }
 """
-__version__ = '1.2.0'
+__version__ = '1.3.0.dev0'
 
 
 def edge_mask(mask):
