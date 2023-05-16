@@ -243,9 +243,12 @@ def main():
     anat_img = nb.load(opts.anat_file)
     mask_img = nb.load(opts.mask_file)
 
-    if anat_img.shape != mask_img.shape:
+    if not (
+        anat_img.shape == mask_img.shape
+        and np.allclose(anat_img.affine, mask_img.affine)
+    ):
         logger.warning(
-            'Anatomical and mask images do not have the same dimensions.'
+            'Anatomical and mask images do not have the same shape and affine.'
         )
         return -1
 
