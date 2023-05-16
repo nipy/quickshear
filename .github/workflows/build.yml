@@ -28,7 +28,6 @@ jobs:
           - os: ubuntu
             python-version: 3.11
             install: wheel
-    name: ${{ matrix.os }} - ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}-latest
     defaults:
       run:
