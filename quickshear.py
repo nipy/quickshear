@@ -10,7 +10,7 @@ try:
 except ImportError:
     # Adapted from
     # https://github.com/duecredit/duecredit/blob/2221bfd/duecredit/stub.py
-    class InactiveDueCreditCollector(object):
+    class InactiveDueCreditCollector:
         """Just a stub at the Collector which would not do anything"""
 
         def _donothing(self, *args, **kwargs):
@@ -211,7 +211,7 @@ def main():
 
     new_anat = quickshear(anat_img, mask_img, opts.buffer)
     new_anat.to_filename(opts.defaced_file)
-    logger.info('Defaced file: {0}'.format(opts.defaced_file))
+    logger.info(f'Defaced file: {opts.defaced_file}')
 
 
 if __name__ == '__main__':
